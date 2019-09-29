@@ -44,7 +44,7 @@ const Impt = {
   },
   getPayments: page => {
     console.log(`http://..?page=${page}`);
-    return delay(3000, Impt.payments[page]);
+    return delay(1000, Impt.payments[page]);
   },
   cancelPayment: async imp_id => {
     await delay(1000, undefined);
