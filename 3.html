@@ -11,19 +11,67 @@
 10. 비동기/동시성 프로그래밍
 - callback과 Promise
 <script>
+const add10 = (a, callback) => {
+  setTimeout(_ => callback(a + 10), 500);
+}
+
+add10(5, function(res) {
+  add10(res, function(res) {
+    add10(res, function(res) {
+      // log(res);
+    })
+  })
+});
+
+const add20 = (a) => new Promise(resolve =>
+  setTimeout(() => resolve(a + 20), 500));
+
+// add20(5)
+//   .then(add20)
+//   .then(add20)
+//   .then(log);
+
 </script>
 
 - 비동기를 값으로 만드는 Promise
 - 값으로서의 Promise 활용
 <script type="module">
+const add10 = (a) => a + 10;
+
+const add20 = (a) => new Promise(resolve =>
+  setTimeout(() => resolve(a + 20), 500));
+
+const go1 = (a, f) =>
+  a instanceof Promise ? a.then(f) : f(a);
+
+// go1(go1(add20(5), add20), log);
+// go1(go1(add10(7), add10), log);
 </script>
 
 - 합성 관점에서의 Promise
 <script type="module">
+const f = a => a + 10;
+const g = a => a + 5;
+log(f(g()));
+
+Array.of(10).map(g).map(f).forEach(a => log(a));
+
+Promise.resolve(10).then(g).then(f).then(a => log(a));
 </script>
 
 - go, pipe, reduce에서 비동기 제어
 <script type="module">
+  log(reduce(add, 0, [1, 2, 3]));
+
+  go1(reduce(function(a, b) {
+    return Promise.resolve(a + b);
+  }, 0, [1, 2, 3]), log);
+
+  go(Promise.resolve(10),
+    a => Promise.resolve(a + 10),
+    a => Promise.resolve(a + 100),
+    log);
+
 </script>
 
 </body>

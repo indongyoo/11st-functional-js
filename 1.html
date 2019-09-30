@@ -15,11 +15,40 @@
   - iterable[Symbol.iterator]()로 이터레이터를 리턴하는 값.
   - 이터레이터
     - iterator.next()가 { value: Any, done: Boolean }를 리턴하는 값
+    - rangeIterator
 <script>
+const arr = [1, 2, 3];
+// const iter = arr[Symbol.iterator]();
+// log(iter.next());
+// log(iter.next());
+// for (const a of iter) log(a);
+const rangeIterator = (start, end) => ({
+  next() {
+    return start < end ?
+      { value: start++, done: false } :
+      { value: undefined, done: true };
+  }
+});
+
+const iter = rangeIterator(1, 5);
+log(iter.next());
+log(iter.next());
+log(iter.next());
+log(iter.next());
+log(iter.next());
 </script>
 
 - for...of 가 내부적으로 하는 일
-<script>
+<script type="module">
+const arr = [1, 2, 3];
+
+const iter = arr[Symbol.iterator]();
+while (true) {
+  const { value, done } = iter.next();
+  if (done) break;
+  const a = value;
+  log(a);
+}
 </script>
 
 - 제너레이터
@@ -27,12 +56,45 @@
   - yield 로 next()의 value 값을 발생
   - return 을 하면 { done: true }
 <script type="module">
+function* gen() {
+  yield 10;
+  if (false) yield 20;
+  yield 30;
+}
+
+for (const a of gen()) log(a);
+
+// const iter = gen();
+// log(iter.next());
+// log(iter.next());
+// log(iter.next());
+// log(iter.next());
+clear();
 </script>
 
 2. map, filter
 - map
 - filter
 <script type="module">
+function map(f, iter) {
+  let res = [];
+  for (const a of iter) {
+    res.push(f(a));
+  }
+  return res;
+}
+const arr = [1, 2, 3, 4];
+log(map(a => a + 10, arr));
+
+function filter(f, iter) {
+  let res = [];
+  for (const a of iter) {
+    if (f(a)) res.push(a);
+  }
+  return res;
+}
+
+log(filter(a => a > 2, [1, 2, 3, 4]));
 </script>
 
 3. 이터러블 프로토콜로 다시 만들기
@@ -40,18 +102,90 @@
 - L.filter
 - L.take
 - L.takeUntil
+- L.range
 <script type="module">
+const L = {};
+L.map = function* (f, iter) {
+  for (const a of iter) yield f(a);
+};
+const map = (..._) => [...L.map(..._)];
+
+L.filter = function* (f, iter) {
+  for (const a of iter) {
+    if (f(a)) yield a;
+  };
+};
+const filter = (..._) => [...L.filter(..._)];
+
+L.takeUntil = function* (f, iter) {
+  for (const a of iter) {
+    yield a;
+    if (f(a)) break;
+  }
+};
+
+const takeUntil = (..._) => [...L.takeUntil(..._)];
+
+L.take = (limit, iter) => L.takeUntil(_ => --limit == 0, iter);
+
+const take = (..._) => [...L.take(..._)];
+
+log(take(3, [1, 2, 3, 4, 5]));
+
+// const iter = L.map(a => a + 1, [1, 2, 3]);
+// log([...iter]);
+//
+// log(map(a => a + 10, [1, 2, 3]));
+// log(filter(a => a > 2, [1, 2, 3]));
+//
+// log([...L.takeUntil(a => a > 3, [1, 2, 3, 4, 5])]);
+
+clear();
 </script>
 
 4. 지연 평가와 제너레이터
-- range
 - 동작 순서와 효율
 <script type="module">
+// log(map(a => a * a, [1, 2, 3]));
+
+const iter =
+  take(3,
+    L.filter(a => a % 2,
+      L.map(a => -a,
+        L.range(0, Infinity))));
+
+log(iter);
+// log(iter.next());
+// log(iter.next());
+// log(iter.next());
+clear();
 </script>
 
 5. 명령형을 이터러블 프로그래밍으로 전환 1
 - 홀수 n개 더하기 명령형 코드
 <script type="module">
+function f1(limit, iter) {
+  let acc = 0;
+  for (let a of iter) {
+    if (a % 2) {
+      a = a * a;
+      acc = acc + a;
+      if (--limit == 0) break;
+    }
+  }
+  log(acc);
+}
+f1(3, [1, 4, 2, 3, 5, 10, 6, 7]);
+
+const add = (a, b) => a + b;
+
+const f2 = (limit, iter) =>
+  reduce(add, 0,
+    L.take(limit,
+      L.map(a => a * a,
+        L.filter(a => a % 2, iter))));
+
+log(f2(3, [1, 4, 2, 3, 5, 10, 6, 7]));
 </script>
 
 </body>

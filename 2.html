@@ -11,25 +11,113 @@
 6. 축약하는 함수 reduce
 - reduce, add
 <script type="module">
+log(reduce(add, 0, [1, 2, 3]));
+log(add(add(add(0, 1), 2), 3));
 </script>
 
 - count
 <script type="module">
+const arr = [1, 2, 1, 2, 2, 3, 3, 4, 4, 4, 4];
+const inc = (obj, k) => {
+  obj[k] = (obj[k] || 0) + 1;
+  return obj;
+};
+const count = (iter) => reduce(inc, {}, iter);
+
+log(count(arr));
+clear();
 </script>
 
 7. 함수를 다루는 함수
 - go
 - pipe (첫 번째 함수는 인자 여러개 받도록)
 <script type="module">
+const go = (arg, ...fs) =>
+  reduce((arg, f) => f(arg), arg, fs);
+
+const pipe = (f, ...fs) => (...args) => go(f(...args), ...fs);
+
+go(0,
+  a => a + 1,
+  a => a + 10,
+  a => a + 100,
+  log);
+
+const f1 = pipe(
+  (a, b) => a + b,
+  a => a + 10,
+  a => a + 100);
+
+log(f1(0, 0));
+log(f1(1000, 1000));
+log(f1(10000, 1000));
+
+go(
+  [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  list => L.filter(a => a % 2)(list),
+  list => L.map(a => a * a)(list),
+  list => L.take(3)(list),
+  list => reduce(add)(list),
+  log);
+
 </script>
 
 - curry
 <script type="module">
+const curry = f => (a, ...rest) =>
+  rest.length ?
+    f(a, ...rest) :
+    (...rest) => f(a, ...rest);
+
+const add = curry((a, b) => a + b);
+
+// const add = a => b => a + b;
+const add10 = add(10);
+
+log(add10(5));
+log(add10(5));
+log(add10(5));
+log(add(10)(5));
+clear();
+
+go(
+  [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  L.filter(a => a % 2),
+  L.map(a => a * a),
+  L.take(3),
+  reduce(add),
+  log);
+
+clear();
 </script>
 
 8. 2차원 배열 다루기 flat
 - L.flat
 <script type="module">
+const arr = [[1, 2, 3], [4, 5], [6, 7]];
+
+const isIterable = a => Boolean(a && a[Symbol.iterator]);
+
+L.flat = function* (iter) {
+  for (const a of iter) {
+    if (isIterable(a)) {
+      yield* a;
+    } else {
+      yield a;
+    }
+  }
+};
+
+const flat = iter => [...L.flat(iter)];
+
+go(arr,
+  L.flat,
+  L.filter(a => a % 2),
+  L.map(a => a * a),
+  L.take(2),
+  reduce(add),
+  log);
+
 </script>
 
 - 리얼월드, users
@@ -51,6 +139,17 @@ const users = [
     { name: 'd3', age: 11 }, { name: 'd4', age: 7 }
   ] }
 ];
+
+go(users,
+  L.map(u => [u, u.family]),
+  L.flat,
+  L.flat,
+  L.filter(u => u.age < 20),
+  L.map(u => u.age),
+  L.take(3),
+  reduce(add),
+  log);
+clear();
 </script>
 
 9. 커머스 데이터 다루기
@@ -63,6 +162,33 @@ const products = [
   { name: '후드티', price: 30000, quantity: 4, is_selected: false },
   { name: '바지', price: 25000, quantity: 5, is_selected: false }
 ];
+
+const sum = reduce(add);
+
+const sumBy = curry((f, iter) => sum(map(f, iter)));
+
+// const totalQuantity = products => go(
+//   products,
+//   map(p => p.quantity),
+//   sum);
+
+const totalQuantity = sumBy(p => p.quantity);
+
+const totalPrice = sumBy(p => p.price);
+
+log(totalQuantity(products));
+log(totalPrice(products));
+
+const selectedTotalQuantity = pipe(
+  filter(p => p.is_selected),
+  sumBy(p => p.quantity));
+
+const selectedTotalPrice = pipe(
+  filter(p => p.is_selected),
+  sumBy(p => p.price));
+
+log(selectedTotalQuantity(products));
+log(selectedTotalPrice(products));
 </script>
 
 - 복잡한 장바구니
@@ -93,6 +219,44 @@ const products = [
     ]
   }
 ];
+go(
+  products,
+  L.filter(p => p.is_selected),
+  L.map(p => p.options),
+  L.flat,
+  L.map(o => o.quantity),
+  reduce(add),
+  log);
+
+go(
+  products,
+  L.filter(p => p.is_selected),
+  map(p => map(o => (p.price + o.price) * o.quantity, p.options)),
+  flat,
+  sum,
+  log);
+
+clear();
+
+go(
+  [1, 2, 3, 4, 5, 6, 7],
+  L.filter(a => a % 2),
+  reduce(add),
+  log
+);
+
+let start = 0;
+const end = 10;
+let acc = 0;
+while (start < end) {
+  acc = acc + start;
+  start += 2;
+}
+log(acc);
+
+log(reduce(add, L.range(0, 10, 2)));
+
+log(range(0, 10, 2));
 </script>
 
 </body>
